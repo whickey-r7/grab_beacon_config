@@ -17,7 +17,7 @@ description = [[
 ]] 
 
 categories = {"safe"}
-author = "Wade Hickey"
+author = "Original code by Wade Hickey. Edits by Zach Stanford."
 
 -- Rule
 portrule = shortport.http
@@ -175,6 +175,11 @@ local function grab_beacon(response)
 			output["Proxy Access Type"] = parse_field("Proxy Access Type",repacked,"\x00\x23\x00\x01\x00\x02","z")
 			output["CreateRemoteThread"] = parse_field("CreateRemoteThread",repacked,"\x00\x24\x00\x01\x00\x02","z")
 
+			
+			output["Watermark"] = parse_field("Watermark",repacked,"\x00\x25\x00\x02\x00\x04",">I")
+			output["C2 Host Header"] = parse_field("C2 Host Header",repacked,"\x00\x36\x00\x03\x00\x80","z")
+
+
 
 			if (stdnse.get_script_args("save")) == "true" then
 				local write_out = io.open(stdnse.tohex(openssl.digest("sha256",response.body)) .. ".bin","w")
@@ -194,7 +199,12 @@ action = function(host,port)
 	local uri_x64 = generate_checksum(93)
 
 	local response_x86 = http.get(host,port,uri_x86)
+	if response_x86.body == nil then
+		return "No Valid Response"
+	end
+
 	json_output['x86'] = {}
+	json_output['x86']['uri_queried'] = uri_x86
 	json_output['x86']['sha256'] = stdnse.tohex(openssl.digest("sha256",response_x86.body))
 	json_output['x86']['sha1'] = stdnse.tohex(openssl.digest("sha1",response_x86.body))
 	json_output['x86']['md5'] = stdnse.tohex(openssl.digest("md5",response_x86.body))
@@ -202,12 +212,20 @@ action = function(host,port)
 	json_output['x86']['config'] = grab_beacon(response_x86)
 
 	local response_x64 = http.get(host,port,uri_x64)
+
+	if response_x64.body == nil then
+		return "No Valid Response"
+	end
+
 	json_output['x64'] = {}
+	json_output['x64']['uri_queried'] = uri_x64
 	json_output['x64']['sha256'] = stdnse.tohex(openssl.digest("sha256",response_x64.body))
 	json_output['x64']['sha1'] = stdnse.tohex(openssl.digest("sha1",response_x64.body))
 	json_output['x64']['md5'] = stdnse.tohex(openssl.digest("md5",response_x64.body))
 	json_output['x64']['time'] = stdnse.clock_ms()
 	json_output['x64']['config'] = grab_beacon(response_x64)
+
+
 
 	json_output = json.generate(json_output)
 	return json_output
