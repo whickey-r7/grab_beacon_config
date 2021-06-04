@@ -17,7 +17,7 @@ description = [[
 ]] 
 
 categories = {"safe"}
-author = "Original code by Wade Hickey. Edits by Zach Stanford."
+author = "Wade Hickey, Zach Stanford"
 
 -- Rule
 portrule = shortport.http
