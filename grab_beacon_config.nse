@@ -6,6 +6,7 @@ local rand = require "rand"
 local openssl = require "openssl"
 local stdnse = require "stdnse"
 local json = require "json"
+local base64 = require "base64"
 
 description = [[ 
 	Simple PoC script to scan and acquire CobaltStrike Beacon configurations.
@@ -106,6 +107,13 @@ local function parse_field(key_name,contents,hex_flag,format)
 		address = address .. string.unpack(format,contents,index + string.len(hex_flag) + 3)
 		return address
 	
+	elseif key_name == "RSA Public Key" then
+		index = string.find(contents,hex_flag,1,true)
+		if index == nil then
+			return nil
+		end
+		return base64.enc(string.sub(contents,index+string.len(hex_flag),index+string.len(hex_flag)+192))
+
 	else
 		index = string.find(contents,hex_flag,1,true)
 
@@ -178,7 +186,7 @@ local function grab_beacon(response)
 			
 			output["Watermark"] = parse_field("Watermark",repacked,"\x00\x25\x00\x02\x00\x04",">I")
 			output["C2 Host Header"] = parse_field("C2 Host Header",repacked,"\x00\x36\x00\x03\x00\x80","z")
-
+			output["RSA Public Key"] = parse_field("RSA Public Key",repacked,"\x00\x07\x00\x03\x01\x00", "")
 
 
 			if (stdnse.get_script_args("save")) == "true" then
